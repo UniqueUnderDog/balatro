@@ -1,0 +1,350 @@
+import random
+from card.poker.poker_card import PokerCard
+from card.joker.joker import joker
+from card.Tarot.tarot_card import TarotCard
+
+class Environment:
+    def __init__(self, player):
+        """
+        初始化游戏环境
+        
+        参数:
+            player: 玩家对象
+        """
+        self.player = player
+        self.poker_card_pool = []  # 扑克牌池
+        self.tarot_card_pool = []  # 塔罗牌池
+        self.joker_card_pool = []  # 小丑牌池
+        self.shop = {"jokers": [], "tarots": []}  # 商店
+        
+        # 初始化所有卡牌池
+        self._init_poker_card_pool()
+        self._init_tarot_card_pool()
+        self._init_joker_card_pool()
+        
+        # 初始化商店
+        self.init_shop()
+    
+    def _init_poker_card_pool(self):
+        """
+        初始化扑克牌池
+        """
+        # 定义扑克牌的花色和点数
+        suits = ['Spades', 'Hearts', 'Clubs', 'Diamonds']
+        values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+        
+        # 创建标准52张牌的扑克牌池
+        for suit in suits:
+            for value in values:
+                self.poker_card_pool.append(PokerCard(suit, value))
+        
+        # 打乱牌池顺序
+        random.shuffle(self.poker_card_pool)
+    
+    def _init_tarot_card_pool(self):
+        """
+        初始化塔罗牌池
+        """
+        # 定义塔罗牌类型和价格
+        tarot_types = [
+            ('POINT_BOOST', 3),
+            ('MULTIPLIER_ADD', 4),
+            ('MULTIPLIER_BOOST', 6),
+            ('FUND_DOUBLE', 3),
+            ('SUIT_TRANSFORM', 4),
+            ('STONE_GENERATOR', 4),
+            ('CARD_DESTROY', 5),
+            ('SELECTIVE_BOOST', 4)
+        ]
+        
+        # 创建塔罗牌池
+        for tarot_type, price in tarot_types:
+            self.tarot_card_pool.append(TarotCard(tarot_type, price))
+        
+        # 打乱牌池顺序
+        random.shuffle(self.tarot_card_pool)
+    
+    def _init_joker_card_pool(self):
+        """
+        初始化小丑牌池
+        """
+        # 定义一些小丑牌
+        joker_cards = [
+            joker("幸运星",price=1,effect="增加所有牌的点数"),
+            joker("魔术师", price=1,effect="改变一张牌的花色"),
+            joker("小丑王", price=1,effect="提升所有小丑牌的效果"),
+            
+        ]
+        
+        # 添加到小丑牌池
+        self.joker_card_pool.extend(joker_cards)
+        
+        # 打乱牌池顺序
+        random.shuffle(self.joker_card_pool)
+    
+    def send_poker_card(self, num=7):
+        """
+        从poker池中无放回地发指定数量的牌给玩家
+        
+        参数:
+            num: 发牌数量，默认为1
+        
+        返回:
+            list: 发给玩家的牌列表
+        """
+        sent_cards = []
+        
+        # 检查牌池是否有足够的牌
+        if len(self.poker_card_pool) < num:
+            print(f"牌池中的牌不足，只能发{len(self.poker_card_pool)}张牌")
+            num = len(self.poker_card_pool)
+        
+        # 无放回地发牌
+        for _ in range(num):
+            card = self.poker_card_pool.pop()
+            self.player.add_card_to_hand(card)
+            sent_cards.append(card)
+        
+        return sent_cards
+    
+    def init_shop(self):
+        """
+        初始化商店，从牌池中随机选择卡牌放入商店
+        """
+        # 从小丑牌池中随机选择2张放入商店
+        if len(self.joker_card_pool) >= 2:
+            self.shop["jokers"] = random.sample(self.joker_card_pool, 2)
+        elif len(self.joker_card_pool) > 0:
+            self.shop["jokers"] = self.joker_card_pool.copy()
+        
+        # 从塔罗牌池中随机选择2张放入商店
+        if len(self.tarot_card_pool) >= 2:
+            self.shop["tarots"] = random.sample(self.tarot_card_pool, 2)
+        elif len(self.tarot_card_pool) > 0:
+            self.shop["tarots"] = self.tarot_card_pool.copy()
+        
+        print("商店已初始化完成")
+    
+    def get_shop_items(self):
+        """
+        获取商店中的所有物品
+        
+        返回:
+            dict: 包含商店中所有物品的字典
+        """
+        return self.shop
+    
+    def refresh_shop(self):
+        """
+        刷新商店，重新从牌池中随机选择卡牌
+        """
+        # 清空当前商店
+        self.shop = {"jokers": [], "tarots": []}
+        
+        # 重新初始化商店
+        self.init_shop()
+        
+        print("商店已刷新")
+    
+    def buy_joker_from_shop(self, index):
+        """
+        从商店购买小丑牌（购买后从全局牌池移除）
+        
+        参数:
+            index: 要购买的小丑牌在商店中的索引
+        
+        返回:
+            bool: 是否购买成功
+        """
+        # 检查索引是否有效
+        if 0 <= index < len(self.shop["jokers"]):
+            joker_card = self.shop["jokers"][index]
+            # 检查玩家是否有足够的资金
+            if self.player.buy_joker(joker_card):
+                # 从商店中移除该小丑牌
+                self.shop["jokers"].pop(index)
+                
+                # 从全局小丑牌池中移除该卡牌（实现卖了就没了的功能）
+                if joker_card in self.joker_card_pool:
+                    self.joker_card_pool.remove(joker_card)
+                
+                print(f"成功购买了小丑牌: {joker_card.name}")
+                return True
+        
+        print("购买失败")
+        return False
+    
+    def buy_tarot_from_shop(self, index):
+        """
+        从商店购买塔罗牌（购买后不从全局牌池移除，可再次出现）
+        
+        参数:
+            index: 要购买的塔罗牌在商店中的索引
+        
+        返回:
+            bool: 是否购买成功
+        """
+        # 检查索引是否有效
+        if 0 <= index < len(self.shop["tarots"]):
+            tarot_card = self.shop["tarots"][index]
+            
+            # 检查玩家是否有足够的资金
+            if self.player.buy_tarot_card(tarot_card):
+                # 从商店中移除该塔罗牌（但不从全局牌池移除，所以可以再次出现）
+                self.shop["tarots"].pop(index)
+                
+                # 将塔罗牌添加给玩家
+                
+                print(f"成功购买了塔罗牌: {tarot_card.tarot_type}")
+                return True
+        
+        print("购买失败")
+        return False
+    
+    def sell_joker_to_shop(self, index):
+        """
+        从商店售卖小丑牌（将小丑牌放回全局牌池）
+        
+        参数:
+            index: 要售卖的小丑牌在玩家手中的索引
+        
+        返回:
+            bool: 是否售卖成功
+        """
+        # 检查索引是否有效
+        if 0 <= index < len(self.player.jokers):
+            joker_card = self.player.jokers[index]
+        else:
+            print("索引无效，无法售卖小丑牌")
+            return False
+        
+        # 添加到全局小丑牌池（实现放回功能）
+        if joker_card not in self.joker_card_pool:
+            self.joker_card_pool.append(joker_card)
+            
+            # 返还一部分购买价格（例如原价的70%）
+            self.player.sell_joker(joker_card)
+            print(f"成功卖出了小丑牌: {joker_card.name}")
+            return True
+        
+        print("售卖失败")
+        return False
+    def sell_tarot_to_shop(self, index):
+        """
+        从商店售卖塔罗牌（将塔罗牌放回全局牌池）
+        
+        参数:
+            index: 要售卖的塔罗牌在玩家手中的索引
+        
+        返回:
+            bool: 是否售卖成功
+        """
+        # 检查索引是否有效
+        if 0 <= index < len(self.player.tarots):
+            tarot_card = self.player.tarots[index]
+        else:
+            print("索引无效，无法售卖塔罗牌")
+            return False
+        
+        # 添加到全局塔罗牌池（实现放回功能）
+        if tarot_card not in self.tarot_card_pool:
+            self.tarot_card_pool.append(tarot_card)
+            
+            # 返还一部分购买价格（例如原价的70%）
+            self.player.sell_tarot(tarot_card)
+            
+                
+            print(f"成功卖出了塔罗牌: {tarot_card.tarot_type}，获得了{sell_price}金币")
+            return True
+        
+        print("售卖失败")
+        return False
+
+# 测试代码
+if __name__ == "__main__":
+    # 导入Player类用于测试
+    from player import Player
+    
+    # 创建玩家
+    player = Player(initial_funds=200)
+    
+    # 创建环境
+    env = Environment(player)
+    
+    # 测试发牌功能
+    print("\n--- 测试发牌功能 ---")
+    env.send_poker_card(5)
+    
+    # 显示玩家当前状态
+    print("\n--- 玩家当前状态 ---")
+    print(player)
+    
+    # 显示商店中的物品
+    print("\n--- 商店中的物品 ---")
+    shop_items = env.get_shop_items()
+    
+    print("小丑牌:")
+    for i, jk in enumerate(shop_items["jokers"]):
+        print(f"{i}. {jk}")
+    
+    print("\n塔罗牌:")
+    for i, tc in enumerate(shop_items["tarots"]):
+        print(f"{i}. {tc.tarot_type} - 价格: {tc.get_price()}")
+    
+    # 测试购买功能
+    if shop_items["jokers"]:
+        print("\n--- 测试购买小丑牌 ---")
+        env.buy_joker_from_shop(0)
+    
+    if shop_items["tarots"]:
+        print("\n--- 测试购买塔罗牌 ---")
+        env.buy_tarot_from_shop(0)
+    
+    # 显示购买后的状态
+    print("\n--- 购买后的玩家状态 ---")
+    print(player)
+    
+    # 测试刷新商店
+    print("\n--- 测试刷新商店 ---")
+    env.refresh_shop()
+    
+    # 显示刷新后的商店物品
+    print("\n--- 刷新后的商店物品 ---")
+    refreshed_shop = env.get_shop_items()
+    
+    print("小丑牌:")
+    for i, jk in enumerate(refreshed_shop["jokers"]):
+        print(f"{i}. {jk}")
+    
+    print("\n塔罗牌:")
+    for i, tc in enumerate(refreshed_shop["tarots"]):
+        print(f"{i}. {tc.tarot_type}")
+    
+    # 测试售卖小丑牌功能
+    print("\n--- 测试售卖小丑牌功能 ---")
+    if player.jokers:
+        # 取出玩家的第一张小丑牌
+        joker_to_sell = player.jokers[0]
+        print(f"尝试出售小丑牌: {joker_to_sell.name}")
+        
+        # 调用售卖方法
+        env.sell_joker_to_shop(0)
+        
+        # 显示售卖后的状态
+        print("\n--- 售卖后的玩家状态 ---")
+        print(f"当前资金: {player.funds}")
+        print(f"剩余小丑牌数量: {len(player.jokers)}")
+        
+        # 刷新商店，查看是否有更多的小丑牌出现
+        print("\n--- 再次刷新商店 ---")
+        env.refresh_shop()
+        
+        # 显示再次刷新后的商店物品
+        print("\n--- 再次刷新后的商店物品 ---")
+        final_shop = env.get_shop_items()
+        
+        print("小丑牌:")
+        for i, jk in enumerate(final_shop["jokers"]):
+            print(f"{i}. {jk}")
+    else:
+        print("玩家没有小丑牌可以出售")
