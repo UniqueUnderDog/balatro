@@ -35,6 +35,17 @@ class TarotCard:
         
     def get_price(self):
         return self.price
+    
+    def __str__(self):
+        """返回塔罗牌的字符串表示"""
+        if self.suits:
+            return f"{self.tarot_type} - {self.description}{self.suits} (价格: {self.price})"
+        return f"{self.tarot_type} - {self.description} (价格: {self.price})"
+    
+    def __repr__(self):
+        """返回塔罗牌的详细表示"""
+        return f"TarotCard(tarot_type='{self.tarot_type}', price={self.price})"
+    
     def get_info(self):
         if self.suits:
             return {

@@ -13,7 +13,7 @@ class Player:
     """
     玩家类，包含游戏中玩家的所有属性和操作方法
     """
-    def __init__(self, initial_funds=4, target_score=200):
+    def __init__(self):
         """
         初始化玩家对象
         
@@ -24,13 +24,13 @@ class Player:
         self.hand = []  # 手牌
         self.poker_hand_rank = TexasPokerHandRanking()
         self.deck = []  # 牌组中的牌
-        self.play_count = 0  # 出牌次数
-        self.discard_count = 0  # 弃牌次数
+        self.play_count = 4  # 出牌次数
+        self.discard_count = 3  # 弃牌次数
         self.jokers = []  # 当前拥有的小丑牌
         self.tarot_cards = []  # 当前拥有的塔罗牌
-        self.funds = initial_funds  # 当前的资金
-        self.score = 0  # 当前的分数
-        self.target_score = target_score  # 目标分数
+        self.funds = 4  # 当前的资金
+        self.score = 0  # 当前的分数  
+        self.hand_limit = 7  # 手牌上限
     
     def play_card(self, card_index=None):
         """
@@ -46,13 +46,15 @@ class Player:
             print("手牌为空，无法出牌")
             return None
         assert len(card_index) <= 5, "最多只能出牌5张"
+        card_list=[]
         for index in sorted(card_index, reverse=True):
             card = self.hand.pop(index)
+            card_list.append(card)
         
         self.play_count += 1
-        print(f"打出了牌: {card}")
+        print(f"打出了牌: {', '.join([str(card) for card in card_list])}")
 
-        return len(card_index)
+        return card_list
     
     def discard_card(self, card_index=None):
         """
@@ -250,5 +252,13 @@ class Player:
         return 
     
     
+
+    def __str__(self):
+        """返回玩家状态的字符串表示"""
+        return f"玩家状态 - 资金: {self.funds}, 分数: {self.score}/{self.target_score}, 手牌: {len(self.hand)}张, 小丑牌: {len(self.jokers)}张, 塔罗牌: {len(self.tarot_cards)}张"
+    
+    def __repr__(self):
+        """返回玩家的详细表示"""
+        return f"Player(funds={self.funds}, score={self.score}, target_score={self.target_score})"
 
 # 测试代码

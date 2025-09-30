@@ -15,6 +15,8 @@ class Environment:
         self.poker_card_pool = []  # 扑克牌池
         self.tarot_card_pool = []  # 塔罗牌池
         self.joker_card_pool = []  # 小丑牌池
+        self.score = 0  # 当前的分数
+        self.tarot_score = 0  # 当前的塔罗牌分数
         self.shop = {"jokers": [], "tarots": []}  # 商店
         
         # 初始化所有卡牌池
@@ -24,7 +26,46 @@ class Environment:
         
         # 初始化商店
         self.init_shop()
+    def get_poker_card_pool(self):
+        """
+        获取扑克牌池
+        
+        返回:
+            list: 包含所有扑克牌的列表
+        """
+        return self.poker_card_pool
     
+    def get_tarot_card_pool(self):
+        """
+        获取塔罗牌池
+        
+        返回:
+            list: 包含所有塔罗牌的列表
+        """
+        return self.tarot_card_pool
+    
+    def get_joker_card_pool(self):
+        """
+        获取小丑牌池
+        
+        返回:
+            list: 包含所有小丑牌的列表
+        """
+        return self.joker_card_pool
+    
+    def get_environment_status(self):
+        """
+        获取游戏环境的状态
+        
+        返回:
+            dict: 包含环境状态的字典
+        """
+        return {
+            "poker_card_pool": self.poker_card_pool,
+            "tarot_card_pool": self.tarot_card_pool,
+            "joker_card_pool": self.joker_card_pool,
+            "shop": self.shop
+        }
     def _init_poker_card_pool(self):
         """
         初始化扑克牌池
@@ -259,92 +300,36 @@ class Environment:
         
         print("售卖失败")
         return False
+    def get_shop_status(self):
+        """
+        获取商店的状态
+        
+        返回:
+            dict: 包含商店状态的字典
+        """
+        return {
+            "jokers": self.shop["jokers"],
+            "tarots": self.shop["tarots"]
+        }
+    
+    def get_environment_status(self):
+        """
+        获取游戏环境的状态
+        
+        返回:
+            dict: 包含环境状态的字典
+        """
+        return {
+            "poker_card_pool": self.poker_card_pool,
+            "tarot_card_pool": self.tarot_card_pool,
+            "joker_card_pool": self.joker_card_pool,
+            "shop": self.get_shop_status()
+        }
+    def shuffle_card_pools(self):
+        """
+        洗牌所有牌池
+        """
+        random.shuffle(self.poker_card_pool)
+        random.shuffle(self.tarot_card_pool)
+        random.shuffle(self.joker_card_pool)
 
-# 测试代码
-if __name__ == "__main__":
-    # 导入Player类用于测试
-    from player import Player
-    
-    # 创建玩家
-    player = Player(initial_funds=200)
-    
-    # 创建环境
-    env = Environment(player)
-    
-    # 测试发牌功能
-    print("\n--- 测试发牌功能 ---")
-    env.send_poker_card(5)
-    
-    # 显示玩家当前状态
-    print("\n--- 玩家当前状态 ---")
-    print(player)
-    
-    # 显示商店中的物品
-    print("\n--- 商店中的物品 ---")
-    shop_items = env.get_shop_items()
-    
-    print("小丑牌:")
-    for i, jk in enumerate(shop_items["jokers"]):
-        print(f"{i}. {jk}")
-    
-    print("\n塔罗牌:")
-    for i, tc in enumerate(shop_items["tarots"]):
-        print(f"{i}. {tc.tarot_type} - 价格: {tc.get_price()}")
-    
-    # 测试购买功能
-    if shop_items["jokers"]:
-        print("\n--- 测试购买小丑牌 ---")
-        env.buy_joker_from_shop(0)
-    
-    if shop_items["tarots"]:
-        print("\n--- 测试购买塔罗牌 ---")
-        env.buy_tarot_from_shop(0)
-    
-    # 显示购买后的状态
-    print("\n--- 购买后的玩家状态 ---")
-    print(player)
-    
-    # 测试刷新商店
-    print("\n--- 测试刷新商店 ---")
-    env.refresh_shop()
-    
-    # 显示刷新后的商店物品
-    print("\n--- 刷新后的商店物品 ---")
-    refreshed_shop = env.get_shop_items()
-    
-    print("小丑牌:")
-    for i, jk in enumerate(refreshed_shop["jokers"]):
-        print(f"{i}. {jk}")
-    
-    print("\n塔罗牌:")
-    for i, tc in enumerate(refreshed_shop["tarots"]):
-        print(f"{i}. {tc.tarot_type}")
-    
-    # 测试售卖小丑牌功能
-    print("\n--- 测试售卖小丑牌功能 ---")
-    if player.jokers:
-        # 取出玩家的第一张小丑牌
-        joker_to_sell = player.jokers[0]
-        print(f"尝试出售小丑牌: {joker_to_sell.name}")
-        
-        # 调用售卖方法
-        env.sell_joker_to_shop(0)
-        
-        # 显示售卖后的状态
-        print("\n--- 售卖后的玩家状态 ---")
-        print(f"当前资金: {player.funds}")
-        print(f"剩余小丑牌数量: {len(player.jokers)}")
-        
-        # 刷新商店，查看是否有更多的小丑牌出现
-        print("\n--- 再次刷新商店 ---")
-        env.refresh_shop()
-        
-        # 显示再次刷新后的商店物品
-        print("\n--- 再次刷新后的商店物品 ---")
-        final_shop = env.get_shop_items()
-        
-        print("小丑牌:")
-        for i, jk in enumerate(final_shop["jokers"]):
-            print(f"{i}. {jk}")
-    else:
-        print("玩家没有小丑牌可以出售")

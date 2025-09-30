@@ -39,3 +39,13 @@ class joker:
             int: joker的价格
         """
         return self.price
+    
+    def __str__(self):
+        """返回小丑牌的字符串表示"""
+        if self.extra_effect:
+            return f"{self.name} - {self.effect} | {self.extra_effect} (价格: {self.price})"
+        return f"{self.name} - {self.effect} (价格: {self.price})"
+    
+    def __repr__(self):
+        """返回小丑牌的详细表示"""
+        return f"joker(name='{self.name}', price={self.price}, effect='{self.effect}')"

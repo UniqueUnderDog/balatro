@@ -53,6 +53,16 @@ class PokerCard:
             'value':self.value,
             'effect':self.effect
         }
+    
+    def __str__(self):
+        """返回扑克牌的字符串表示"""
+        if self.effect:
+            return f"{self.value} of {self.suit} (效果: {self.effect})"
+        return f"{self.value} of {self.suit}"
+    
+    def __repr__(self):
+        """返回扑克牌的详细表示"""
+        return f"PokerCard(suit='{self.suit}', value='{self.value}', effect={self.effect})"
 # Test code for PokerCard class and related components
 if __name__ == "__main__":
     print("===== Testing Poker Card System =====\n")
