@@ -13,69 +13,127 @@ class Player:
     """
     玩家类，包含游戏中玩家的所有属性和操作方法
     """
-    def __init__(self):
+    def __init__(self, initial_funds=4, target_score=200, hand_limit=8, plays_per_round=4, discards_per_round=3):
         """
         初始化玩家对象
         
         参数:
-            initial_funds (int): 初始资金，默认为100
-            target_score (int): 目标分数，默认为1000
+            initial_funds (int): 初始资金，默认为4
+            target_score (int): 目标分数，默认为200
+            hand_limit (int): 手牌上限，默认为8
+            plays_per_round (int): 每回合出牌次数，默认为4
+            discards_per_round (int): 每回合弃牌次数，默认为3
         """
         self.hand = []  # 手牌
         self.poker_hand_rank = TexasPokerHandRanking()
         self.deck = []  # 牌组中的牌
-        self.play_count = 4  # 出牌次数
-        self.discard_count = 3  # 弃牌次数
+        self.play_count = 0  # 出牌次数
+        self.discard_count = 0  # 弃牌次数
         self.jokers = []  # 当前拥有的小丑牌
         self.tarot_cards = []  # 当前拥有的塔罗牌
-        self.funds = 4  # 当前的资金
-        self.score = 0  # 当前的分数  
-        self.hand_limit = 7  # 手牌上限
+        self.funds = initial_funds  # 当前的资金
+        self.score = 0  # 当前的分数
+        self.target_score = target_score  # 目标分数
+        
+        # 回合制相关属性
+        self.hand_limit = hand_limit  # 手牌上限
+        self.plays_per_round = plays_per_round  # 每回合出牌次数
+        self.discards_per_round = discards_per_round  # 每回合弃牌次数
+        self.current_plays = 0  # 当前回合已出牌次数
+        self.current_discards = 0  # 当前回合已弃牌次数
     
     def play_card(self, card_index=None):
         """
         出一次牌
         
         参数:
-            card_index (int, optional): 要出的牌在手中的索引，如果为None则出第一张牌
+            card_index (list): 要出的牌在手中的索引列表
         
         返回:
-            PokerCard or None: 打出的牌，如果手牌为空则返回None
+            bool: 是否成功出牌
         """
         if not self.hand:
             print("手牌为空，无法出牌")
-            return None
-        assert len(card_index) <= 5, "最多只能出牌5张"
-        card_list=[]
+            return False
+            
+        if self.current_plays >= self.plays_per_round:
+            print(f"本回合出牌次数已用完 ({self.current_plays}/{self.plays_per_round})")
+            return False
+            
+        if card_index is None or len(card_index) == 0:
+            print("请选择要出的牌")
+            return False
+            
+        if len(card_index) > 5:
+            print("最多只能出牌5张")
+            return False
+        
+        # 验证索引有效性
+        for index in card_index:
+            if index < 0 or index >= len(self.hand):
+                print(f"无效的牌索引: {index}")
+                return False
+        
+        # 出牌
+        played_cards = []
         for index in sorted(card_index, reverse=True):
             card = self.hand.pop(index)
-            card_list.append(card)
+            played_cards.append(card)
         
-        self.play_count += 1
-        print(f"打出了牌: {', '.join([str(card) for card in card_list])}")
-
-        return card_list
+        print(f"打出了牌: {', '.join([str(card) for card in played_cards])}")
+        
+        # 计算分数
+        score = self.compute_score(played_cards, TexasPokerHandRanking(), self.jokers)
+        self.score += score
+        print(f"本次出牌得分: {score}, 总分: {self.score}/{self.target_score}")
+        
+        # 更新当前回合出牌次数
+        self.current_plays += 1
+        
+        return True
     
     def discard_card(self, card_index=None):
         """
         弃一次手牌
         
         参数:
-            card_index (int, optional): 要弃的牌在手中的索引，如果为None则弃第一张牌
+            card_index (list): 要弃的牌在手中的索引列表
         
         返回:
-            PokerCard or None: 弃掉的牌，如果手牌为空则返回None
+            int: 弃掉的牌数量，如果无法弃牌则返回0
         """
         if not self.hand:
             print("手牌为空，无法弃牌")
-            return None
-        assert len(card_index) <= 5, "最多只能弃牌5张"
+            return 0
+            
+        if self.current_discards >= self.discards_per_round:
+            print(f"本回合弃牌次数已用完 ({self.current_discards}/{self.discards_per_round})")
+            return 0
+            
+        if card_index is None or len(card_index) == 0:
+            print("请选择要弃的牌")
+            return 0
+            
+        if len(card_index) > 5:
+            print("最多只能弃牌5张")
+            return 0
+        
+        # 验证索引有效性
+        for index in card_index:
+            if index < 0 or index >= len(self.hand):
+                print(f"无效的牌索引: {index}")
+                return 0
+        
+        # 弃牌
+        discarded_cards = []
         for index in sorted(card_index, reverse=True):
             card = self.hand.pop(index)
+            discarded_cards.append(card)
         
+        self.current_discards += 1
         self.discard_count += 1
-        print(f"弃掉了牌: {', '.join([str(card) for card in card_index])}")
-        return len(card_index)
+        print(f"弃掉了牌: {', '.join([str(card) for card in discarded_cards])}")
+        return len(discarded_cards)
     
     def use_tarot_card(self, tarot_index=None,card_index=None):
         """
@@ -104,6 +162,41 @@ class Player:
         
             
         return True
+    
+    def new_round(self):
+        """
+        开始新回合，重置回合相关计数器
+        """
+        self.current_plays = 0
+        self.current_discards = 0
+        print(f"新回合开始！出牌次数: {self.plays_per_round}, 弃牌次数: {self.discards_per_round}")
+    
+    def can_play(self):
+        """
+        检查是否还能出牌
+        
+        返回:
+            bool: 是否还能出牌
+        """
+        return self.current_plays < self.plays_per_round and len(self.hand) > 0
+    
+    def can_discard(self):
+        """
+        检查是否还能弃牌
+        
+        返回:
+            bool: 是否还能弃牌
+        """
+        return self.current_discards < self.discards_per_round and len(self.hand) > 0
+    
+    def has_won(self):
+        """
+        检查是否达到胜利条件
+        
+        返回:
+            bool: 是否获胜
+        """
+        return self.score >= self.target_score
     
     def add_card_to_hand(self, card):
         """
@@ -228,28 +321,49 @@ class Player:
             hand (list[PokerCard]): 玩家的手牌
         """
         apply_tarrot(tarot_card,hand)
-    def compute_score(self,hand,hand_rank:TexasPokerHandRanking,joker):
+    def compute_score(self, hand, hand_rank: TexasPokerHandRanking, jokers):
         """
         计算手牌的分数
-        """
-    
-        hand_type=hand_rank.get_hand_type(hand)
-        point,multiplier=hand_rank.get_point(hand_type)
         
+        参数:
+            hand: 手牌列表
+            hand_rank: 牌型判断器
+            jokers: 小丑牌列表
+        
+        返回:
+            int: 计算得到的分数
+        """
+        if not hand:
+            return 0
+        
+        # 获取牌型基础分数和倍率
+        hand_type = hand_rank.get_hand_type(hand)
+        base_point, base_multiplier = hand_rank.get_point(hand_type)
+        
+        total_point = base_point
+        total_multiplier = base_multiplier
+        
+        # 计算每张牌的点数和效果
         for card in hand:
-            card_value=card.get_numeric_value()
-            point+=card_value
+            card_value = card.get_numeric_value()
+            total_point += card_value
+            
+            # 处理牌的特殊效果
             if card.has_effect():
-                if card.effect.name=='MULTIPLIER_TIMES_1_5':
-                    multiplier*=1.5
-                elif card.effect.name=='MULTIPLIER_PLUS_4':
-                    multiplier+=4
-                elif card.effect.name=='POINT_PLUS_30':
-                    point+=30
-            point,multiplier=apply_joker(joker,card)
-        point,multiplier=apply_joker_final(joker,hand)
-        self.score+=point*multiplier
-        return 
+                if hasattr(card.effect, 'name'):
+                    if card.effect.name == 'MULTIPLIER_TIMES_1_5':
+                        total_multiplier *= 1.5
+                    elif card.effect.name == 'MULTIPLIER_PLUS_4':
+                        total_multiplier += 4
+                    elif card.effect.name == 'POINT_PLUS_30':
+                        total_point += 30
+        
+        # TODO: 应用小丑牌效果（需要实现apply_joker函数）
+        # for joker_card in jokers:
+        #     total_point, total_multiplier = apply_joker(joker_card, total_point, total_multiplier)
+        
+        final_score = int(total_point * total_multiplier)
+        return final_score 
     
     
 
