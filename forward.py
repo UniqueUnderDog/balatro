@@ -30,10 +30,11 @@ class GameController:
         self.player.new_round()
         
         # 显示当前状态
-        self.show_game_status()
+        
         
         # 回合循环：玩家可以使用塔罗牌、出牌，直到出牌次数用完
         while self.player.can_play() and not self.player.has_won():
+            self.show_game_status()
             action = self.get_player_action()
             
             if action == "play":
@@ -42,8 +43,6 @@ class GameController:
                 self.handle_discard_cards()
             elif action == "tarot":
                 self.handle_use_tarot()
-            elif action == "skip":
-                break
             else:
                 print("无效的选择，请重新输入")
                 continue
@@ -88,7 +87,6 @@ class GameController:
             actions.append("discard - 弃牌")
         if self.player.tarot_cards:
             actions.append("tarot - 使用塔罗牌")
-        actions.append("skip - 跳过回合")
         
         for action in actions:
             print(f"  {action}")
@@ -110,10 +108,11 @@ class GameController:
                 return
             
             indices = [int(x) for x in indices_input.split()]
-            cards, score = self.player.play_card(indices)
+            success = self.player.play_card(indices)
             
-            if cards:
-                print(f"成功出牌，获得 {score} 分")
+            if success:
+                print(f"成功出牌")
+                self.refill_hand()
         except ValueError:
             print("输入格式错误，请输入数字")
         except Exception as e:
@@ -164,13 +163,6 @@ class GameController:
             print("输入格式错误，请输入数字")
         except Exception as e:
             print(f"使用塔罗牌失败: {e}")
-    
-    def refill_hand(self):
-        """补牌到手牌上限"""
-        cards_needed = self.player.hand_limit - len(self.player.hand)
-        if cards_needed > 0:
-            sent_cards = self.environment.send_poker_card(cards_needed)
-            print(f"补牌 {len(sent_cards)} 张")
     
     def end_game(self):
         """结束游戏"""

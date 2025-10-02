@@ -16,7 +16,8 @@ class Environment:
         self.tarot_card_pool = []  # 塔罗牌池
         self.joker_card_pool = []  # 小丑牌池
         self.score = 0  # 当前的分数
-        self.tarot_score = 0  # 当前的塔罗牌分数
+        self.round=0 #当前轮次
+        self.target_score = 300  # 目标分数
         self.shop = {"jokers": [], "tarots": []}  # 商店
         
         # 初始化所有卡牌池
@@ -147,6 +148,13 @@ class Environment:
             sent_cards.append(card)
         
         return sent_cards
+    
+    def refill_hand(self):
+        """补牌到手牌上限"""
+        cards_needed = self.player.hand_limit - len(self.player.hand)
+        if cards_needed > 0:
+            sent_cards = self.send_poker_card(cards_needed)
+            print(f"补牌 {len(sent_cards)} 张")
     
     def init_shop(self):
         """
@@ -332,4 +340,32 @@ class Environment:
         random.shuffle(self.poker_card_pool)
         random.shuffle(self.tarot_card_pool)
         random.shuffle(self.joker_card_pool)
+    
+    def check_game_end(self):
+        """
+        检查游戏是否结束
+        
+        返回:
+            bool: 如果游戏结束则返回True，否则返回False
+        """
+        # 检查玩家是否还有足够的资金
+        if self.player.play_count == 0 and self.score<self.target:
+            print("游戏结束，玩家未达到目标分数")
+            return True
+        elif self.score>=self.target:
+            print("游戏结束，玩家达到目标分数")
+            return True
+        
+        return False
+    
+    def update_score(self):
+        """
+        更新当前轮次的分数
+        
+        参数:
+            score (int): 要更新的分数
+        """
+        self.score =self.player.score
+    
+        
 

@@ -83,7 +83,7 @@ class Player:
         print(f"打出了牌: {', '.join([str(card) for card in played_cards])}")
         
         # 计算分数
-        score = self.compute_score(played_cards, TexasPokerHandRanking(), self.jokers)
+        score = self.compute_score(played_cards, self.poker_hand_rank, self.jokers)
         self.score += score
         print(f"本次出牌得分: {score}, 总分: {self.score}/{self.target_score}")
         
@@ -338,7 +338,7 @@ class Player:
         
         # 获取牌型基础分数和倍率
         hand_type = hand_rank.get_hand_type(hand)
-        base_point, base_multiplier = hand_rank.get_point(hand_type)
+        base_point, base_multiplier = hand_rank.get_points(hand_type)
         
         total_point = base_point
         total_multiplier = base_multiplier
